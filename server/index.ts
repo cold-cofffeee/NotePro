@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { authRouter } from "./auth.js";
 import { notesRouter } from "./notes.js";
 import { tagsRouter } from "./tags.js";
+import { ensureDatabaseSchema } from "./db.js";
 
 dotenv.config();
 
@@ -21,6 +22,15 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+const bootstrap = async () => {
+  await ensureDatabaseSchema();
+
+  app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+};
+
+bootstrap().catch((error) => {
+  console.error("Server bootstrap error:", error);
+  process.exit(1);
 });
