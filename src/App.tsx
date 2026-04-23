@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
+import { isAxiosError } from 'axios';
 import { Archive, FileText, Trash2, Pin } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { Footer } from './components/Footer';
@@ -13,6 +14,7 @@ import { NoteEditor } from './components/NoteEditor';
 import { NoteView } from './components/NoteView';
 import { AppContextMenu } from './components/AppContextMenu';
 import { RenameNoteDialog } from './components/RenameNoteDialog';
+import { CreateTagDialog } from './components/CreateTagDialog';
 import {
   archiveNote,
   deleteNoteForever,
@@ -47,23 +49,33 @@ function NotesDashboard() {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [noteToRename, setNoteToRename] = useState<Note | null>(null);
+  const [isCreateTagOpen, setIsCreateTagOpen] = useState(false);
   const location = useLocation();
 
-  const fetchNotes = async (filter: NotesFilter) => {
+  const fetchNotes = useCallback(async (filter: NotesFilter) => {
     try {
       setIsLoading(true);
       const response = await fetchNotesApi(filter);
       setNotes(response);
-    } catch (error) {
+    } catch {
       toast.error('Failed to load notes');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  const loadTags = useCallback(async () => {
+    try {
+      const tags = await fetchTags();
+      setAvailableTags(tags.map((tag) => tag.name));
+    } catch {
+      setAvailableTags([]);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchNotes(currentFilter);
-  }, [currentFilter]);
+    void fetchNotes(currentFilter);
+  }, [currentFilter, fetchNotes]);
 
   useEffect(() => {
     const queryTag = new URLSearchParams(location.search).get('tag');
@@ -71,17 +83,8 @@ function NotesDashboard() {
   }, [location.search]);
 
   useEffect(() => {
-    const loadTags = async () => {
-      try {
-        const tags = await fetchTags();
-        setAvailableTags(tags.map((tag) => tag.name));
-      } catch (error) {
-        setAvailableTags([]);
-      }
-    };
-
-    loadTags();
-  }, []);
+    void loadTags();
+  }, [loadTags]);
 
   const derivedTags = useMemo(() => extractTagsFromNotes(notes), [notes]);
   const mergedTags = useMemo(() => {
@@ -153,9 +156,12 @@ function NotesDashboard() {
         toast.success('Note deleted permanently');
       }
 
-      fetchNotes();
-    } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Failed to perform action');
+      await fetchNotes(currentFilter);
+    } catch (error: unknown) {
+      const message = isAxiosError<{ error?: string }>(error)
+        ? error.response?.data?.error
+        : undefined;
+      toast.error(message || 'Failed to perform action');
     }
   };
 
@@ -164,7 +170,7 @@ function NotesDashboard() {
       <TopNav onMenuClick={() => setIsCommandMenuOpen(true)} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <AppContextMenu
         onNewNote={() => navigate('/note/new')}
-        onNewTag={() => setIsCommandMenuOpen(true)}
+        onNewTag={() => setIsCreateTagOpen(true)}
         onOpenArchive={() => setCurrentFilter('archive')}
         onOpenTrash={() => setCurrentFilter('trash')}
       >
@@ -231,42 +237,44 @@ function NotesDashboard() {
                 )}
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-[1fr_240px]">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                    <Pin className="w-4 h-4 text-yellow-500" />
-                    Pinned
-                  </div>
-                  {pinned.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-gray-200 bg-white/80 p-4 text-sm text-gray-500">
-                      Pin up to 5 notes for quick access.
+              {currentFilter === 'all' && (
+                <div className="grid gap-4 lg:grid-cols-[1fr_240px]">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <Pin className="w-4 h-4 text-yellow-500" />
+                      Pinned
                     </div>
-                  ) : (
-                    <NotesList
-                      notes={pinned}
-                      view={currentFilter}
-                      onAction={handleNoteAction}
-                      onTagSelect={handleTagSelect}
-                      isPinnedSection
-                    />
-                  )}
+                    {pinned.length === 0 ? (
+                      <div className="rounded-lg border border-dashed border-gray-200 bg-white/80 p-4 text-sm text-gray-500">
+                        Pin up to 5 notes for quick access.
+                      </div>
+                    ) : (
+                      <NotesList
+                        notes={pinned}
+                        view={currentFilter}
+                        onAction={handleNoteAction}
+                        onTagSelect={handleTagSelect}
+                        isPinnedSection
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    <div className="text-sm font-semibold text-gray-700">Quick Access</div>
+                    <button
+                      onClick={() => setCurrentFilter('archive')}
+                      className="w-full rounded-lg border border-gray-200 bg-white p-3 text-left text-sm text-gray-700 hover:border-gray-300"
+                    >
+                      Archive
+                    </button>
+                    <button
+                      onClick={() => setCurrentFilter('trash')}
+                      className="w-full rounded-lg border border-gray-200 bg-white p-3 text-left text-sm text-gray-700 hover:border-gray-300"
+                    >
+                      Trash
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <div className="text-sm font-semibold text-gray-700">Quick Access</div>
-                  <button
-                    onClick={() => setCurrentFilter('archive')}
-                    className="w-full rounded-lg border border-gray-200 bg-white p-3 text-left text-sm text-gray-700 hover:border-gray-300"
-                  >
-                    Archive
-                  </button>
-                  <button
-                    onClick={() => setCurrentFilter('trash')}
-                    className="w-full rounded-lg border border-gray-200 bg-white p-3 text-left text-sm text-gray-700 hover:border-gray-300"
-                  >
-                    Trash
-                  </button>
-                </div>
-              </div>
+              )}
 
               {isLoading ? (
                 <div className="text-center py-20 text-gray-500">Loading notes...</div>
@@ -301,7 +309,18 @@ function NotesDashboard() {
         onClose={() => setNoteToRename(null)}
         onSaved={() => {
           setNoteToRename(null);
-          fetchNotes(currentFilter);
+          void fetchNotes(currentFilter);
+        }}
+      />
+      <CreateTagDialog
+        open={isCreateTagOpen}
+        onOpenChange={setIsCreateTagOpen}
+        onCreated={(createdNames) => {
+          setAvailableTags((current) => {
+            const merged = new Set([...current, ...createdNames]);
+            return Array.from(merged).sort((a, b) => a.localeCompare(b));
+          });
+          void loadTags();
         }}
       />
     </div>

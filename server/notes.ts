@@ -45,6 +45,22 @@ const cleanupExpiredTrash = async () => {
   });
 };
 
+const getPinnedNotesCount = async (userId: string, excludeNoteId?: string) => {
+  const args: string[] = [userId];
+  const excludeClause = excludeNoteId ? " AND id != ?" : "";
+
+  if (excludeNoteId) {
+    args.push(excludeNoteId);
+  }
+
+  const result = await db.execute({
+    sql: `SELECT COUNT(*) as count FROM notes WHERE user_id = ? AND deleted_at IS NULL AND is_pinned = 1${excludeClause}`,
+    args,
+  });
+
+  return Number(result.rows[0]?.count ?? 0);
+};
+
 notesRouter.get("/", async (req: AuthRequest, res: Response) => {
   try {
     await cleanupExpiredTrash();
@@ -165,6 +181,13 @@ notesRouter.post("/", async (req: AuthRequest, res: Response) => {
       ? resolvedArchivedAt !== null
       : Boolean(isArchived);
 
+    if (isPinned) {
+      const pinnedCount = await getPinnedNotesCount(userId as string);
+      if (pinnedCount >= 5) {
+        return res.status(400).json({ error: "You can only pin up to 5 notes" });
+      }
+    }
+
     const noteId = uuidv4();
     await db.execute({
       sql: "INSERT INTO notes (id, user_id, title, content, is_pinned, is_archived, archived_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -182,7 +205,7 @@ notesRouter.post("/", async (req: AuthRequest, res: Response) => {
 
     if (normalizedTags.length > 0) {
       for (const tagName of normalizedTags) {
-        let tagResult = await db.execute({
+        const tagResult = await db.execute({
           sql: "SELECT id FROM tags WHERE user_id = ? AND name = ?",
           args: [userId as string, tagName]
         });
@@ -230,6 +253,25 @@ notesRouter.put("/:id", async (req: AuthRequest, res: Response) => {
     }
 
     if (isPinned !== undefined) {
+      if (isPinned) {
+        const currentNote = await db.execute({
+          sql: "SELECT id, is_pinned FROM notes WHERE id = ? AND user_id = ?",
+          args: [noteId, userId as string],
+        });
+
+        if (!currentNote.rows[0]) {
+          return res.status(404).json({ error: "Note not found" });
+        }
+
+        const wasPinned = Boolean(currentNote.rows[0].is_pinned);
+        if (!wasPinned) {
+          const pinnedCount = await getPinnedNotesCount(userId as string, noteId);
+          if (pinnedCount >= 5) {
+            return res.status(400).json({ error: "You can only pin up to 5 notes" });
+          }
+        }
+      }
+
       fields.push("is_pinned = ?");
       args.push(isPinned ? 1 : 0);
     }
@@ -267,7 +309,7 @@ notesRouter.put("/:id", async (req: AuthRequest, res: Response) => {
       });
 
       for (const tagName of normalizedTags) {
-        let tagResult = await db.execute({
+        const tagResult = await db.execute({
           sql: "SELECT id FROM tags WHERE user_id = ? AND name = ?",
           args: [userId as string, tagName],
         });
@@ -342,12 +384,30 @@ notesRouter.post("/:id/restore", async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
     const noteId = req.params.id;
 
-    await db.execute({
-      sql: "UPDATE notes SET deleted_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+    const existingNote = await db.execute({
+      sql: "SELECT id, is_pinned FROM notes WHERE id = ? AND user_id = ?",
       args: [noteId, userId as string],
     });
 
-    res.json({ message: "Note restored" });
+    const note = existingNote.rows[0];
+    if (!note) {
+      return res.status(404).json({ error: "Note not found" });
+    }
+
+    const shouldUnpinOnRestore = note.is_pinned
+      ? (await getPinnedNotesCount(userId as string, noteId)) >= 5
+      : false;
+
+    await db.execute({
+      sql: "UPDATE notes SET deleted_at = NULL, is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+      args: [shouldUnpinOnRestore ? 0 : note.is_pinned ? 1 : 0, noteId, userId as string],
+    });
+
+    res.json({
+      message: shouldUnpinOnRestore
+        ? "Note restored and unpinned because pin limit was reached"
+        : "Note restored",
+    });
   } catch (error) {
     console.error("Restore note error:", error);
     res.status(500).json({ error: "Internal server error" });

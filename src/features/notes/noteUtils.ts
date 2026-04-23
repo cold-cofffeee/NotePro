@@ -31,11 +31,19 @@ export const extractTagsFromNotes = (notes: Note[]) => {
 
 export const filterNotes = (notes: Note[], searchTerm: string, activeTag?: string) => {
   const term = searchTerm.trim().toLowerCase();
+  const normalizedActiveTag = activeTag?.trim().toLowerCase();
+
   return notes.filter((note) => {
+    const normalizedTags = (note.tags || []).map((tag) => tag.toLowerCase());
+    const tagText = normalizedTags.join(" ");
     const searchMatch = term
-      ? note.title.toLowerCase().includes(term) || note.content.toLowerCase().includes(term)
+      ? note.title.toLowerCase().includes(term) ||
+        note.content.toLowerCase().includes(term) ||
+        tagText.includes(term)
       : true;
-    const tagMatch = activeTag ? note.tags?.includes(activeTag) : true;
+
+    const tagMatch = normalizedActiveTag ? normalizedTags.includes(normalizedActiveTag) : true;
+
     return searchMatch && tagMatch;
   });
 };
