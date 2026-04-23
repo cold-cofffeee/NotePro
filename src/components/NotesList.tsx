@@ -1,15 +1,15 @@
-import { Link } from 'react-router-dom'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, Tag } from 'lucide-react'
+import { Link } from 'react-router-dom';
+import { Calendar, Clock, Tag } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './ui/card';
+import { Badge } from './ui/badge';
 
 interface Note {
-  id: string
-  title: string
-  content: string
-  tags: string[]
-  createdAt: number
-  updatedAt: number
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  createdAt: number;
+  updatedAt: number;
 }
 
 export function NotesList({ notes }: { notes: Note[] }) {
@@ -34,7 +34,7 @@ export function NotesList({ notes }: { notes: Note[] }) {
               <div className="flex items-center">
                 <Tag className="w-4 h-4 mr-2 text-gray-500" />
                 <div className="flex flex-wrap gap-1">
-                  {note.tags.map((tag) => (
+                  {note.tags && note.tags.map((tag) => (
                     <Badge key={tag} variant="secondary" className="text-xs bg-gray-200 text-gray-700">{tag}</Badge>
                   ))}
                 </div>
@@ -44,5 +44,5 @@ export function NotesList({ notes }: { notes: Note[] }) {
         </Link>
       ))}
     </div>
-  )
+  );
 }

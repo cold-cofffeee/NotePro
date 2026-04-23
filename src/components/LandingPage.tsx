@@ -32,7 +32,7 @@ export function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
               <Button asChild size="lg" className="text-lg group">
-                <Link to="/notes">
+                <Link to="/auth">
                   Get Started
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
@@ -66,7 +66,7 @@ export function LandingPage() {
                 whileTap={{ scale: 0.95 }}
               >
                 <Button asChild size="lg" className="text-lg px-8">
-                  <Link to="/notes">Start Organizing Now</Link>
+                  <Link to="/auth">Start Organizing Now</Link>
                 </Button>
               </motion.div>
             </div>

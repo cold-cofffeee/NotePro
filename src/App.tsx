@@ -1,251 +1,136 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { v4 as uuidv4 } from 'uuid';
-import { NoteEditor } from './components/NoteEditor';
-import { NoteView } from './components/NoteView';
-import { TopNav } from './components/TopNav';
-import { CommandMenu } from './components/CommandMenu';
-import { TagManager } from './components/TagManager';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { Toaster, toast } from 'react-hot-toast';
-import { Input } from './components/ui/input';
-import { Button } from './components/ui/button';
-import { PlusCircle, Search, Calendar, Clock, Tag } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import { LandingPage } from './components/LandingPage';
 import { Footer } from './components/Footer';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from './components/ui/card';
-import { Badge } from './components/ui/badge';
-import axios from 'axios';
+import { AuthPage } from './components/AuthPage';
+import { TopNav } from './components/TopNav';
+import { CommandMenu } from './components/CommandMenu';
+import { NotesList } from './components/NotesList';
+import { NoteEditor } from './components/NoteEditor';
+import { NoteView } from './components/NoteView';
+import api from './lib/api';
 
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: number;
-  updatedAt: number;
-}
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const token = localStorage.getItem('auth_token');
+  const location = useLocation();
 
-export function NotesList({ notes }: { notes: Note[] }) {
+  if (!token) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  return <>{children}</>;
+};
+
+function NotesDashboard() {
+  const [notes, setNotes] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchNotes();
+  }, []);
+
+  const fetchNotes = async () => {
+    try {
+      setIsLoading(true);
+      const response = await api.get('/notes');
+      setNotes(response.data);
+    } catch (error) {
+      toast.error('Failed to load notes');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredNotes = notes.filter(note => 
+    note.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    note.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {notes.map((note) => (
-        <Link key={note.id} to={`/note/${note.id}`}>
-          <Card className="h-full hover:shadow-lg transition-shadow border-l-4 border-blue-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-bold text-blue-700">{note.title}</CardTitle>
-              <div className="flex items-center text-xs text-gray-500">
-                <Calendar className="w-3 h-3 mr-1" />
-                <span>{new Date(note.createdAt).toLocaleDateString()}</span>
-                <Clock className="w-3 h-3 ml-2 mr-1" />
-                <span>{new Date(note.updatedAt).toLocaleTimeString()}</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-700 line-clamp-3">{note.content}</p>
-            </CardContent>
-            <CardFooter className="pt-2">
-              <div className="flex items-center">
-                <Tag className="w-4 h-4 mr-2 text-gray-500" />
-                <div className="flex flex-wrap gap-1">
-                  {note.tags && note.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs bg-gray-200 text-gray-700">{tag}</Badge>
-                  ))}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <TopNav onMenuClick={() => setIsCommandMenuOpen(true)} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+      <div className="flex-grow flex overflow-hidden">
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+          <div className="max-w-6xl mx-auto space-y-6">
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-gray-900">My Notes</h1>
+              <Link to="/note/new" className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors inline-block text-sm font-medium shadow-sm">
+                New Note
+              </Link>
+            </div>
+            
+            {isLoading ? (
+              <div className="text-center py-20 text-gray-500">Loading notes...</div>
+            ) : filteredNotes.length === 0 ? (
+              <div className="text-center py-20 px-4">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <Tag className="w-8 h-8 text-gray-400" />
                 </div>
+                <h3 className="text-xl font-medium text-gray-900 mb-2">No notes found</h3>
+                <p className="text-gray-500 max-w-sm mx-auto mb-6">Create a note to start organizing your thoughts, or adjust your search.</p>
+                <Link to="/note/new" className="px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition-colors inline-block text-sm font-medium shadow-sm">
+                  Create Note
+                </Link>
               </div>
-            </CardFooter>
-          </Card>
-        </Link>
-      ))}
+            ) : (
+              <NotesList notes={filteredNotes} />
+            )}
+          </div>
+        </main>
+      </div>
+      <CommandMenu isOpen={isCommandMenuOpen} setIsOpen={setIsCommandMenuOpen} notes={notes} tags={[]} />
     </div>
   );
 }
 
 export default function App() {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [tags, setTags] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isCommandMenuOpen, setIsCommandMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchNotes = async () => {
-      const response = await axios.get('http://localhost:5000/notes');
-      setNotes(response.data);
-    };
-    fetchNotes();
-  }, []);
-
-  const addNote = async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newNote = {
-      ...note,
-      id: uuidv4(),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    const response = await axios.post('http://localhost:5000/notes', newNote);
-    setNotes([response.data, ...notes]);
-    toast.success('Note added successfully!', {
-      icon: '🎉',
-      style: {
-        borderRadius: '10px',
-        background: '#333',
-        color: '#fff',
-      },
-    });
-  };
-
-  const updateNote = async (updatedNote: Note) => {
-    const response = await axios.put(`http://localhost:5000/notes/${updatedNote.id}`, updatedNote);
-    setNotes(notes.map(note => (note.id === updatedNote.id ? response.data : note)));
-    toast.success('Note updated successfully!', {
-      icon: '✅',
-      style: {
-        borderRadius: '10px',
-        background: '#333',
-        color: '#fff',
-      },
-    });
-  };
-
-  const deleteNote = async (id: string) => {
-    await axios.delete(`http://localhost:5000/notes/${id}`);
-    setNotes(notes.filter(note => note.id !== id));
-    toast.success('Note deleted successfully!', {
-      icon: '🗑️',
-      style: {
-        borderRadius: '10px',
-        background: '#333',
-        color: '#fff',
-      },
-    });
-  };
-
-  const addTag = (tag: string) => {
-    if (!tags.includes(tag)) {
-      setTags([...tags, tag]);
-    }
-  };
-
-  const removeTag = (tag: string) => {
-    setTags(tags.filter(t => t !== tag));
-  };
-
-  const filteredNotes = notes.filter(note =>
-    note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    note.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    note.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
-
   return (
     <Router>
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-secondary">
-        <TopNav setIsCommandMenuOpen={setIsCommandMenuOpen} />
-        <main className="flex-1 py-8">
-          <AnimatePresence mode="wait">
-            <Routes>
-              <Route path="/" element={
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="container mx-auto px-4"
-                >
-                  <LandingPage />
-                </motion.div>
-              } />
-              <Route path="/notes" element={
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="container mx-auto px-4 space-y-8"
-                >
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-                    <h1 className="text-4xl font-bold text-primary">My Notes</h1>
-                    <div className="flex items-center space-x-4 w-full sm:w-auto">
-                      <div className="relative w-full sm:w-64">
-                        <Input
-                          type="text"
-                          placeholder="Search notes..."
-                          value={searchTerm}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                          className="pl-10 pr-4 py-2 w-full"
-                        />
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                      </div>
-                      <Button asChild className="bg-primary hover:bg-primary-dark transition-colors duration=200">
-                        <Link to="/new">
-                          <PlusCircle className="mr-2 h-4 w-4" /> New Note
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-6">
-                    <TagManager tags={tags} onAddTag={addTag} onRemoveTag={removeTag} />
-                  </div>
-                  <div className="mt-8">
-                    <NotesList notes={filteredNotes} />
-                  </div>
-                </motion.div>
-              } />
-              <Route path="/new" element={
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="container mx-auto px-4"
-                >
-                  <NoteEditor tags={tags} onSave={addNote} onAddTag={addTag} />
-                </motion.div>
-              } />
-              <Route path="/edit/:id" element={
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="container mx-auto px-4"
-                >
-                  <NoteEditor tags={tags} notes={notes} onSave={(note) => updateNote({ ...note as Note, updatedAt: Date.now() })} onAddTag={addTag} />
-                </motion.div>
-              } />
-              <Route path="/note/:id" element={
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.5 }}
-                  className="container mx-auto px-4"
-                >
-                  <NoteView notes={notes} onDelete={deleteNote} />
-                </motion.div>
-              } />
-            </Routes>
-          </AnimatePresence>
-        </main>
-        <Footer />
-        <CommandMenu 
-          isOpen={isCommandMenuOpen} 
-          setIsOpen={setIsCommandMenuOpen}
-          notes={notes}
-          tags={tags}
+      <Toaster position="bottom-right" />
+      <Routes>
+        <Route path="/" element={<><LandingPage /><Footer /></>} />
+        <Route path="/auth" element={<AuthPage />} />
+        
+        <Route 
+          path="/notes" 
+          element={
+            <ProtectedRoute>
+              <NotesDashboard />
+            </ProtectedRoute>
+          } 
         />
-        <Toaster 
-          position="top-center"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-              padding: '16px',
-              borderRadius: '10px',
-            },
-          }}
+        
+        <Route 
+          path="/note/new" 
+          element={
+            <ProtectedRoute>
+              <NoteEditor />
+            </ProtectedRoute>
+          } 
         />
-      </div>
+        
+        <Route 
+          path="/note/:id/edit" 
+          element={
+            <ProtectedRoute>
+              <NoteEditor />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/note/:id" 
+          element={
+            <ProtectedRoute>
+              <NoteView />
+            </ProtectedRoute>
+          } 
+        />
+      </Routes>
     </Router>
   );
 }

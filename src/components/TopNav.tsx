@@ -1,50 +1,84 @@
-import { Button } from "@/components/ui/button"
-import { Command } from "lucide-react"
+import { Button } from "./ui/button"
+import { Command, LogOut, Search } from "lucide-react"
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { toast } from 'react-hot-toast'
+import { Input } from "./ui/input"
 
 interface TopNavProps {
-  setIsCommandMenuOpen: (isOpen: boolean) => void
+  onMenuClick: () => void
+  searchTerm?: string
+  setSearchTerm?: (val: string) => void
 }
 
-export function TopNav({ setIsCommandMenuOpen }: TopNavProps) {
+export function TopNav({ onMenuClick, searchTerm, setSearchTerm }: TopNavProps) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.key === 's') {
+      if (event.ctrlKey && event.key === 'k') {
         event.preventDefault()
-        setIsCommandMenuOpen(true)
+        onMenuClick()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [setIsCommandMenuOpen])
+  }, [onMenuClick])
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user_info');
+    toast.success('Logged out successfully');
+    navigate('/auth');
+  }
+
+  const isNotesPage = location.pathname === '/notes'
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
+    <nav className="sticky top-0 z-50 w-full bg-white border-b border-gray-200">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-14 items-center">
           <Link to="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold">📝 NotePro</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-black text-white font-bold text-base">
+              N
+            </div>
+            <span className="text-xl font-bold tracking-tight text-gray-900 hidden sm:block">NotePro</span>
           </Link>
-          <div className="hidden md:flex items-center space-x-4">
-            <Link to="/" className="hover:text-primary bg-secondary/50 px-3 py-2 rounded-md">Home</Link>
-            <Link to="/notes" className="hover:text-primary">My Notes</Link>
-            {/* <a href="#features" className="hover:text-primary">Features</a> */}
-          </div>
-          <div className="flex items-center space-x-4">
+          
+          {isNotesPage && setSearchTerm && (
+            <div className="flex-1 max-w-md mx-4 relative hidden md:block">
+              <Search className="absolute left-2.5 top-2 h-4 w-4 text-gray-500" />
+              <Input
+                type="text"
+                placeholder="Search notes..."
+                className="w-full pl-9 bg-gray-50 border-gray-200 focus-visible:ring-black h-8 text-sm"
+                value={searchTerm || ''}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          )}
+
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
-              className="hidden sm:flex"
-              onClick={() => setIsCommandMenuOpen(true)}
+              className="text-gray-500 hover:text-gray-900 h-8"
+              onClick={onMenuClick}
             >
-              <Command className="mr-2 h-4 w-4" />
-              Search... (Ctrl+S)
+              <Command className="mr-2 h-4 w-4 hidden sm:block" />
+              ?K
             </Button>
-            <Button variant="ghost" asChild>
-              <Link to="/notes">Get Started</Link>
+            
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-gray-600 hover:text-red-600 h-8 hidden sm:flex">
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+            
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-gray-600 hover:text-red-600 sm:hidden h-8 w-8">
+              <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
