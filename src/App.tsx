@@ -239,33 +239,73 @@ function NotesDashboard() {
                 )}
               </div>
 
-              {currentFilter === 'all' && (
+              {currentFilter === 'all' ? (
                 <div className="grid gap-3 md:gap-4 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
-                  <section className="rounded-xl border border-yellow-200/70 bg-gradient-to-b from-yellow-50/80 to-white p-3 md:p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-yellow-900">
-                        <Pin className="w-4 h-4 text-yellow-500" />
-                        Pinned
+                  <div className="space-y-3 md:space-y-4">
+                    <section className="rounded-xl border border-yellow-200/70 bg-gradient-to-b from-yellow-50/80 to-white p-3 md:p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-yellow-900">
+                          <Pin className="w-4 h-4 text-yellow-500" />
+                          Pinned
+                        </div>
+                        <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-yellow-700 ring-1 ring-yellow-200/80">
+                          {pinned.length}/5
+                        </span>
                       </div>
-                      <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-yellow-700 ring-1 ring-yellow-200/80">
-                        {pinned.length}/5
-                      </span>
-                    </div>
-                    {pinned.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-yellow-300 bg-white px-4 py-3 text-sm text-gray-600">
-                        <p className="font-medium text-gray-800">No pinned notes yet</p>
-                        <p className="mt-1 text-xs text-gray-500">Use right-click on any note and choose Pin. Your top 5 pinned notes stay here for quick access.</p>
+                      {pinned.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-yellow-300 bg-white px-4 py-3 text-sm text-gray-600">
+                          <p className="font-medium text-gray-800">No pinned notes yet</p>
+                          <p className="mt-1 text-xs text-gray-500">Use right-click on any note and choose Pin. Your top 5 pinned notes stay here for quick access.</p>
+                        </div>
+                      ) : (
+                        <NotesList
+                          notes={pinned}
+                          view={currentFilter}
+                          onAction={handleNoteAction}
+                          onTagSelect={handleTagSelect}
+                          isPinnedSection
+                        />
+                      )}
+                    </section>
+
+                    {isLoading ? (
+                      <div className="min-h-[32vh] flex items-center justify-center text-center text-gray-500">Loading notes...</div>
+                    ) : isEmptyState ? (
+                      <div className="rounded-xl border border-gray-200 bg-white px-6 py-7 text-center shadow-sm">
+                        <div className="w-14 h-14 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                          <FileText className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-xl font-medium text-gray-900 mb-2">No notes found</h3>
+                        <p className="text-gray-500 max-w-sm mx-auto mb-4">Create a note to start organizing your thoughts, or adjust your search.</p>
+                        <Link to="/note/new" className="px-4 py-2.5 bg-black text-white rounded-md hover:bg-gray-800 transition-colors inline-block text-sm font-medium shadow-sm">
+                          Create Note
+                        </Link>
                       </div>
                     ) : (
-                      <NotesList
-                        notes={pinned}
-                        view={currentFilter}
-                        onAction={handleNoteAction}
-                        onTagSelect={handleTagSelect}
-                        isPinnedSection
-                      />
+                      <>
+                        {others.length > 0 && (
+                          <div className="flex items-center justify-between border-b border-gray-200 pb-2 pt-1">
+                            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">All Notes</h2>
+                            <span className="text-xs text-gray-500">{others.length} shown</span>
+                          </div>
+                        )}
+
+                        {others.length === 0 ? (
+                          <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                            All matching notes are pinned above.
+                          </div>
+                        ) : (
+                          <NotesList
+                            notes={others}
+                            view={currentFilter}
+                            onAction={handleNoteAction}
+                            onTagSelect={handleTagSelect}
+                          />
+                        )}
+                      </>
                     )}
-                  </section>
+                  </div>
+
                   <aside className="h-fit rounded-xl border border-gray-200 bg-white p-3 md:p-4 shadow-sm space-y-3 lg:sticky lg:top-4">
                     <div>
                       <div className="text-sm font-semibold text-gray-800">Quick Access</div>
@@ -291,9 +331,7 @@ function NotesDashboard() {
                     </button>
                   </aside>
                 </div>
-              )}
-
-              {isLoading ? (
+              ) : isLoading ? (
                 <div className="min-h-[44vh] flex items-center justify-center text-center text-gray-500">Loading notes...</div>
               ) : isEmptyState ? (
                 <div className="flex min-h-[calc(100vh-17rem)] md:min-h-[calc(100vh-18rem)] items-center justify-center px-4">
@@ -311,27 +349,12 @@ function NotesDashboard() {
                   </div>
                 </div>
               ) : (
-                <>
-                  {currentFilter === 'all' && others.length > 0 && (
-                    <div className="flex items-center justify-between border-b border-gray-200 pb-2 pt-1">
-                      <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">All Notes</h2>
-                      <span className="text-xs text-gray-500">{others.length} shown</span>
-                    </div>
-                  )}
-
-                  {currentFilter === 'all' && others.length === 0 ? (
-                    <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
-                      All matching notes are pinned above.
-                    </div>
-                  ) : (
-                    <NotesList
-                      notes={listNotes}
-                      view={currentFilter}
-                      onAction={handleNoteAction}
-                      onTagSelect={handleTagSelect}
-                    />
-                  )}
-                </>
+                <NotesList
+                  notes={listNotes}
+                  view={currentFilter}
+                  onAction={handleNoteAction}
+                  onTagSelect={handleTagSelect}
+                />
               )}
             </div>
           </main>
