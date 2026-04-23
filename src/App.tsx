@@ -49,14 +49,10 @@ function NotesDashboard() {
   const [noteToRename, setNoteToRename] = useState<Note | null>(null);
   const location = useLocation();
 
-  useEffect(() => {
-    fetchNotes();
-  }, []);
-
-  const fetchNotes = async () => {
+  const fetchNotes = async (filter: NotesFilter) => {
     try {
       setIsLoading(true);
-      const response = await fetchNotesApi(currentFilter);
+      const response = await fetchNotesApi(filter);
       setNotes(response);
     } catch (error) {
       toast.error('Failed to load notes');
@@ -66,7 +62,7 @@ function NotesDashboard() {
   };
 
   useEffect(() => {
-    fetchNotes();
+    fetchNotes(currentFilter);
   }, [currentFilter]);
 
   useEffect(() => {
@@ -305,7 +301,7 @@ function NotesDashboard() {
         onClose={() => setNoteToRename(null)}
         onSaved={() => {
           setNoteToRename(null);
-          fetchNotes();
+          fetchNotes(currentFilter);
         }}
       />
     </div>

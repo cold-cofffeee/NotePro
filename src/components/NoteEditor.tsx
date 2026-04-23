@@ -75,7 +75,7 @@ export function NoteEditor() {
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden min-h-[80vh] flex flex-col">
         <div className="border-b border-gray-200 p-4 flex items-center justify-between bg-gray-50/50">
-          <Button variant="ghost" onClick={() => navigate(isEditing ? `/note/${id}` : '/notes')} className="text-gray-500 hover:text-gray-900">
+          <Button variant="ghost" onClick={() => navigate(noteId ? `/note/${noteId}` : '/notes')} className="text-gray-500 hover:text-gray-900">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
