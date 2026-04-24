@@ -55,6 +55,14 @@ const ensureBaseTables = async () => {
         name TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )`,
+      `CREATE TABLE IF NOT EXISTS audit_logs (
+        id TEXT PRIMARY KEY,
+        action_type TEXT NOT NULL,
+        actor_id TEXT,
+        target_id TEXT,
+        metadata TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`
     ],
     "write"
   );
@@ -90,6 +98,9 @@ export const ensureDatabaseSchema = async () => {
   await addColumnIfMissing("notes", "updated_at", "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
 
   await addColumnIfMissing("tags", "color", "color TEXT");
+  
+  await addColumnIfMissing("users", "role", "role TEXT DEFAULT 'user'");
+  await addColumnIfMissing("users", "is_suspended", "is_suspended BOOLEAN DEFAULT 0");
 
   await db.batch(
     [

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { authRouter } from "./auth.js";
 import { notesRouter } from "./notes.js";
 import { tagsRouter } from "./tags.js";
+import { adminRouter } from "./admin.js";
 import { ensureDatabaseSchema } from "./db.js";
 
 dotenv.config();
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use("/api/auth", authRouter);
 app.use("/api/notes", notesRouter);
 app.use("/api/tags", tagsRouter);
+app.use("/api/admin", adminRouter);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });

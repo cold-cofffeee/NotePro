@@ -2,6 +2,7 @@ import { Router, Response } from "express";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "./db.js";
 import { authenticate, AuthRequest } from "./middleware.js";
+import { logAudit } from "./audit.js";
 
 export const notesRouter = Router();
 
@@ -259,6 +260,8 @@ notesRouter.post("/", async (req: AuthRequest, res: Response) => {
       }
     }
 
+    await logAudit("note_created", userId as string, noteId, { title });
+
     res.status(201).json({ id: noteId, title, content, tags: normalizedTags });
   } catch (error) {
     console.error("Create note error:", error);
@@ -351,6 +354,8 @@ notesRouter.put("/:id", async (req: AuthRequest, res: Response) => {
       }
     }
 
+    await logAudit("note_updated", userId as string, noteId);
+
     res.json({ message: "Note updated successfully" });
   } catch (error) {
     console.error("Update note error:", error);
@@ -376,6 +381,8 @@ notesRouter.delete("/:id", async (req: AuthRequest, res: Response) => {
       });
     }
 
+    await logAudit(permanent ? "note_deleted_permanently" : "note_trashed", userId as string, noteId);
+
     res.json({ message: permanent ? "Note deleted permanently" : "Note moved to trash" });
   } catch (error) {
     console.error("Delete note error:", error);
@@ -392,6 +399,8 @@ notesRouter.post("/:id/trash", async (req: AuthRequest, res: Response) => {
       sql: "UPDATE notes SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
       args: [noteId, userId as string],
     });
+
+    await logAudit("note_trashed", userId as string, noteId);
 
     res.json({ message: "Note moved to trash" });
   } catch (error) {
@@ -424,6 +433,8 @@ notesRouter.post("/:id/restore", async (req: AuthRequest, res: Response) => {
       args: [shouldUnpinOnRestore ? 0 : note.is_pinned ? 1 : 0, noteId, userId as string],
     });
 
+    await logAudit("note_restored", userId as string, noteId);
+
     res.json({
       message: shouldUnpinOnRestore
         ? "Note restored and unpinned because pin limit was reached"
@@ -445,6 +456,8 @@ notesRouter.post("/:id/archive", async (req: AuthRequest, res: Response) => {
       args: [noteId, userId as string],
     });
 
+    await logAudit("note_archived", userId as string, noteId);
+
     res.json({ message: "Note archived" });
   } catch (error) {
     console.error("Archive note error:", error);
@@ -461,6 +474,8 @@ notesRouter.post("/:id/unarchive", async (req: AuthRequest, res: Response) => {
       sql: "UPDATE notes SET archived_at = NULL, is_archived = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
       args: [noteId, userId as string],
     });
+
+    await logAudit("note_unarchived", userId as string, noteId);
 
     res.json({ message: "Note unarchived" });
   } catch (error) {
