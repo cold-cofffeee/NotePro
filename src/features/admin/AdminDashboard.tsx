@@ -23,7 +23,7 @@ export function AdminDashboard() {
     fetchDashboardMetrics().then(setMetrics).catch(console.error);
 
     // Setup SSE
-    const token = localStorage.getItem("auth_token");
+    localStorage.getItem("auth_token");
     // Native EventSource doesn't support headers well, but we can append token to URL if needed,
     // or we use a polyfill. Since we didn't add polyfill, let's use a workaround with fetch/stream 
     // or just pass token in query param.
