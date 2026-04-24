@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { fetchArchivedNotes, bulkNoteAction } from "./adminApi";
 import { Card, CardContent } from "../../components/ui/card";
 import { toast } from "react-hot-toast";
-import { ChevronLeft, ChevronRight, Search, Trash2, RotateCcw, CheckSquare, Square, Eye, Archive } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Trash2, RotateCcw, CheckSquare, Square, Archive } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { useNavigate } from "react-router-dom";
