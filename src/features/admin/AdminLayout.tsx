@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Users, FileText, BarChart3, Activity, ShieldAlert, Settings, LogOut } from "lucide-react";
+import { Users, FileText, BarChart3, Activity, ShieldAlert, Tag, Trash2, LogOut } from "lucide-react";
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -10,6 +10,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { to: "/admin/analytics", icon: BarChart3, label: "Analytics" },
     { to: "/admin/users", icon: Users, label: "Users" },
     { to: "/admin/notes", icon: FileText, label: "Notes" },
+    { to: "/admin/trash", icon: Trash2, label: "Trash" },
+    { to: "/admin/tags", icon: Tag, label: "Tags" },
     { to: "/admin/audit", icon: ShieldAlert, label: "Audit Logs" },
   ];
 

@@ -5,13 +5,13 @@ export const fetchDashboardMetrics = async () => {
   return data;
 };
 
-export const fetchAnalytics = async () => {
-  const { data } = await api.get("/admin/analytics");
+export const fetchAnalytics = async (timeRange: "7d" | "30d" = "30d") => {
+  const { data } = await api.get("/admin/analytics", { params: { range: timeRange } });
   return data;
 };
 
-export const fetchUsers = async () => {
-  const { data } = await api.get("/admin/users");
+export const fetchUsers = async (page = 1, limit = 50) => {
+  const { data } = await api.get("/admin/users", { params: { page, limit } });
   return data;
 };
 
@@ -20,12 +20,47 @@ export const toggleUserSuspension = async (id: string, isSuspended: boolean) => 
   return data;
 };
 
-export const fetchAllNotes = async () => {
-  const { data } = await api.get("/admin/notes");
+export const deleteUser = async (id: string) => {
+  const { data } = await api.delete(`/admin/users/${id}`);
   return data;
 };
 
-export const fetchAuditLogs = async () => {
-  const { data } = await api.get("/admin/audit");
+export const fetchAllNotes = async (page = 1, limit = 50) => {
+  const { data } = await api.get("/admin/notes", { params: { page, limit } });
+  return data;
+};
+
+export const fetchDeletedNotes = async (page = 1, limit = 50) => {
+  const { data } = await api.get("/admin/notes/deleted", { params: { page, limit } });
+  return data;
+};
+
+export const restoreNoteAdmin = async (noteId: string) => {
+  const { data } = await api.post(`/admin/notes/${noteId}/restore`);
+  return data;
+};
+
+export const deleteNotePermanently = async (noteId: string) => {
+  const { data } = await api.delete(`/admin/notes/${noteId}`);
+  return data;
+};
+
+export const fetchAuditLogs = async (page = 1, limit = 100) => {
+  const { data } = await api.get("/admin/audit", { params: { page, limit } });
+  return data;
+};
+
+export const fetchAllTags = async () => {
+  const { data } = await api.get("/admin/tags");
+  return data;
+};
+
+export const deleteTag = async (tagId: string) => {
+  const { data } = await api.delete(`/admin/tags/${tagId}`);
+  return data;
+};
+
+export const renameTag = async (tagId: string, newName: string) => {
+  const { data } = await api.patch(`/admin/tags/${tagId}`, { name: newName });
   return data;
 };

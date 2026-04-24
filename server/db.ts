@@ -110,6 +110,11 @@ export const ensureDatabaseSchema = async () => {
       "CREATE INDEX IF NOT EXISTS idx_notes_user_pinned ON notes(user_id, is_pinned, deleted_at)",
       "CREATE INDEX IF NOT EXISTS idx_note_tags_note ON note_tags(note_id)",
       "CREATE INDEX IF NOT EXISTS idx_note_tags_tag ON note_tags(tag_id)",
+      "CREATE INDEX IF NOT EXISTS idx_audit_action_type ON audit_logs(action_type)",
+      "CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at DESC)",
+      "CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id)",
+      "CREATE INDEX IF NOT EXISTS idx_users_created ON users(created_at DESC)",
+      "CREATE INDEX IF NOT EXISTS idx_notes_deleted ON notes(deleted_at)",
     ],
     "write"
   );
