@@ -34,6 +34,7 @@ import { AdminUsers } from './features/admin/AdminUsers';
 import { AdminNotes } from './features/admin/AdminNotes';
 import { AdminAuditLogs } from './features/admin/AdminAuditLogs';
 import { AdminTrash } from './features/admin/AdminTrash';
+import { AdminArchivedNotes } from './features/admin/AdminArchivedNotes';
 import { AdminTags } from './features/admin/AdminTags';
 import api from './lib/api';
 
@@ -399,6 +400,7 @@ export default function App() {
         <Route path="/admin/analytics" element={<AdminRoute><AdminLayout><AdminAnalytics /></AdminLayout></AdminRoute>} />
         <Route path="/admin/users" element={<AdminRoute><AdminLayout><AdminUsers /></AdminLayout></AdminRoute>} />
         <Route path="/admin/notes" element={<AdminRoute><AdminLayout><AdminNotes /></AdminLayout></AdminRoute>} />
+        <Route path="/admin/archive" element={<AdminRoute><AdminLayout><AdminArchivedNotes /></AdminLayout></AdminRoute>} />
         <Route path="/admin/audit" element={<AdminRoute><AdminLayout><AdminAuditLogs /></AdminLayout></AdminRoute>} />
         <Route path="/admin/trash" element={<AdminRoute><AdminLayout><AdminTrash /></AdminLayout></AdminRoute>} />
         <Route path="/admin/tags" element={<AdminRoute><AdminLayout><AdminTags /></AdminLayout></AdminRoute>} />

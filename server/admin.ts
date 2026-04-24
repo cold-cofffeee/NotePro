@@ -329,6 +329,36 @@ adminRouter.post("/notes/bulk", async (req: AuthRequest, res) => {
   }
 });
 
+adminRouter.get("/notes/archived", async (req, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+    const offset = (page - 1) * limit;
+
+    const notes = await db.execute(`
+      SELECT n.id, n.title, n.content, n.created_at, n.updated_at, n.deleted_at, n.is_archived, u.email as user_email, u.id as user_id
+      FROM notes n
+      JOIN users u ON n.user_id = u.id
+      WHERE n.deleted_at IS NULL AND n.is_archived = 1
+      ORDER BY n.updated_at DESC
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
+
+    const countResult = await db.execute("SELECT COUNT(*) as count FROM notes WHERE deleted_at IS NULL AND is_archived = 1");
+    
+    res.json({
+      data: notes.rows,
+      pagination: {
+        page,
+        limit,
+        total: countResult.rows[0].count,
+      },
+    });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch archived notes" });
+  }
+});
+
 adminRouter.get("/notes/deleted", async (req, res) => {
   try {
     const page = parseInt(req.query.page as string) || 1;

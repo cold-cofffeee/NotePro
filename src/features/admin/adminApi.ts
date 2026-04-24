@@ -50,6 +50,11 @@ export const bulkNoteAction = async (ids: string[], action: string) => {
   return data;
 };
 
+export const fetchArchivedNotes = async (page = 1, limit = 50) => {
+  const { data } = await api.get("/admin/notes/archived", { params: { page, limit } });
+  return data;
+};
+
 export const fetchDeletedNotes = async (page = 1, limit = 50) => {
   const { data } = await api.get("/admin/notes/deleted", { params: { page, limit } });
   return data;
